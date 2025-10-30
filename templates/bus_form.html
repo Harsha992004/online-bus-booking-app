@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>{% if mode=='edit' %}Bus Sudarinchandi{% else %}Kotha Bus{% endif %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-inner container">
+      <div class="brand">🚌 TripWheels</div>
+      <ul class="nav-links">
+        <li><a href="{{ url_for('index') }}">Home</a></li>
+        <li><a href="{{ url_for('view_bookings') }}">Bookings</a></li>
+        <li><a href="{{ url_for('help_page') }}">Help</a></li>
+        <li><a href="{{ url_for('admin_buses') }}" class="active">Admin</a></li>
+      </ul>
+    </div>
+  </nav>
+  {% with msgs = get_flashed_messages(with_categories=True) %}
+    {% if msgs %}
+    <div class="container" style="max-width:720px">
+      {% for cat, msg in msgs %}
+      <div class="toast {{ 'error' if cat=='error' else 'show' }}" style="position:static">{{ msg }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+  <div class="container" style="max-width:680px">
+    <h1 style="margin-bottom:10px">{% if mode=='edit' %}Bus Sudarinchandi{% else %}Kotha Bus{% endif %}</h1>
+    <form method="post" class="auth-form" style="background:rgba(255,255,255,0.08);padding:16px;border-radius:10px">
+      <label>Pere (Name)
+        <input type="text" name="name" value="{{ (bus.name if bus else '') }}" required />
+      </label>
+      <label>Nundi (From)
+        <input type="text" name="from_city" value="{{ (bus.from_city if bus else '') }}" required />
+      </label>
+      <label>Varaku (To)
+        <input type="text" name="to_city" value="{{ (bus.to_city if bus else '') }}" required />
+      </label>
+      <label>Departure
+        <input type="text" name="depart_time" value="{{ (bus.depart_time if bus else '') }}" placeholder="YYYY-MM-DD HH:MM" required />
+      </label>
+      <label>Arrival
+        <input type="text" name="arrive_time" value="{{ (bus.arrive_time if bus else '') }}" placeholder="YYYY-MM-DD HH:MM" required />
+      </label>
+      <label>Seats
+        <input type="number" name="seats_total" min="1" value="{{ (bus.seats_total if bus else 40) }}" />
+      </label>
+      <label>Fare (₹)
+        <input type="number" name="fare" step="0.01" value="{{ (bus.fare if bus else 0) }}" />
+      </label>
+      <div style="display:flex;gap:10px">
+        <button type="submit">Save (Save cheyandi)</button>
+        <a class="btn-outline" href="{{ url_for('admin_buses') }}">Back (Tirigi Vellandi)</a>
+      </div>
+    </form>
+  </div>
+</body>
+</html>

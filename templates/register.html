@@ -1,0 +1,55 @@
+  {% with msgs = get_flashed_messages(with_categories=True) %}
+    {% if msgs %}
+    <div class="container" style="max-width:520px">
+      {% for cat, msg in msgs %}
+      <div class="toast {{ 'error' if cat=='error' else 'show' }}" style="position:static">{{ msg }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Register</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-inner container">
+      <div class="brand">🚌 TripWheels</div>
+      <ul class="nav-links">
+        <li><a href="{{ url_for('index') }}">🏠 Home</a></li>
+        <li><a href="{{ url_for('view_bookings') }}">🎫 Bookings</a></li>
+        <li><a href="{{ url_for('help_page') }}">❓ Help</a></li>
+        {% if session.get('role') == 'admin' %}
+        <li><a href="{{ url_for('admin_buses') }}">Admin</a></li>
+        {% endif %}
+        <li><a href="{{ url_for('account_page') }}" class="active">👤 My Account</a></li>
+      </ul>
+    </div>
+  </nav>
+  <div class="container" style="max-width:520px">
+    <h1>Register</h1>
+    {% if error %}
+    <div class="toast error show" style="position:static">{{ error }}</div>
+    {% endif %}
+    <form method="post" class="auth-form" style="background:rgba(255,255,255,0.08);padding:16px;border-radius:10px">
+      <label>Name
+        <input type="text" name="name" value="{{ name or '' }}" required />
+      </label>
+      <label>Phone
+        <input type="tel" name="phone" value="{{ phone or '' }}" inputmode="numeric" pattern="[0-9]{10}" title="10 digits" />
+      </label>
+      <label>Email
+        <input type="email" name="email" value="{{ email or '' }}" required />
+      </label>
+      <label>Password
+        <input type="password" name="password" minlength="6" required />
+      </label>
+      <button type="submit">Create Account</button>
+    </form>
+    <p class="muted">Already have an account? <a href="{{ url_for('login') }}">Login</a></p>
+  </div>
+</body>
+</html>

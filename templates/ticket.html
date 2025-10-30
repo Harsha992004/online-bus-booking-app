@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ticket #{{ b['id'] }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <style>
+    body { font-family: Inter, Segoe UI, system-ui, -apple-system, sans-serif; color:#fff; }
+    .ticket-wrap { max-width: 760px; margin: 24px auto; background: rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); border-radius: 12px; overflow: hidden; }
+    .ticket-head { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.12); }
+    .brand { font-weight: 800; letter-spacing: 0.3px; }
+    .ticket-body { display:grid; gap:14px; padding: 16px 20px; }
+    .grid { display:grid; gap:8px; grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .muted { opacity: 0.85; }
+    .kv { display:flex; gap:8px; }
+    .kv .k { opacity:0.8; width:140px; }
+    .badge { display:inline-block; padding:3px 8px; border-radius:999px; font-size:12px; background:#0ea5e9; color:#001726; font-weight:600; }
+    .actions { display:flex; gap:10px; justify-content:flex-end; padding: 0 20px 16px; }
+    .btn { background:#7C3AED; color:#fff; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; }
+    .btn-outline { border:1px solid #A78BFA; background:transparent; color:#eaf2ff; padding:8px 12px; border-radius:8px; cursor:pointer; }
+    .qr-wrap { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:0 20px 16px; }
+    .qr-box { background:#fff; padding:8px; border-radius:10px; }
+    .seats { padding: 0 20px 12px; }
+    @media (max-width:640px){ .grid { grid-template-columns: 1fr; } .kv .k { width:120px; } }
+  </style>
+</head>
+<body>
+  <div class="ticket-wrap">
+    <div class="ticket-head">
+      <div class="brand">🚌 TripWheels</div>
+      <div>Ticket <span class="badge">#{{ b['id'] }}</span></div>
+    </div>
+    <div class="ticket-body">
+      <div class="grid">
+        <div>
+          {% if b['passengers'] and b['passengers']|length > 0 %}
+          <div class="kv"><div class="k">Passengers</div><div>{% for p in b['passengers'] %}{{ p['name'] }}{% if not loop.last %}, {% endif %}{% endfor %}</div></div>
+          {% else %}
+          <div class="kv"><div class="k">Passenger</div><div>{{ b['passenger_name'] }}</div></div>
+          {% endif %}
+          {% if b['passengers'] and b['passengers']|length > 0 %}
+          <div class="kv"><div class="k">Phones</div><div>{% for p in b['passengers'] %}{{ p['phone'] or '—' }}{% if not loop.last %}, {% endif %}{% endfor %}</div></div>
+          {% else %}
+          <div class="kv"><div class="k">Phone</div><div>{{ b['passenger_phone'] }}</div></div>
+          {% endif %}
+          <div class="kv"><div class="k">Seats</div><div>{{ b['seats_booked'] }}</div></div>
+          <div class="kv"><div class="k">Booked at</div><div class="muted">{{ b['booked_at'] }}</div></div>
+        </div>
+        <div>
+          <div class="kv"><div class="k">Bus</div><div>{{ b['bus_name'] }}</div></div>
+          <div class="kv"><div class="k">Route</div><div>{{ b['from_city'] }} → {{ b['to_city'] }}</div></div>
+          <div class="kv"><div class="k">Departure</div><div>{{ b['depart_time'] }}</div></div>
+          <div class="kv"><div class="k">Arrival</div><div>{{ b['arrive_time'] }}</div></div>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="kv"><div class="k">Status</div><div>{{ (b['status'] or 'confirmed')|capitalize }}</div></div>
+        <div class="kv"><div class="k">Payment</div><div>{{ (b['payment_status'] or 'unpaid')|capitalize }}{% if b['payment_ref'] %} • Ref: {{ b['payment_ref'] }}{% endif %}</div></div>
+      </div>
+      <div class="kv"><div class="k">Fare per head</div><div>₹{{ b['fare'] }}</div></div>
+      <div class="kv"><div class="k">Total</div><div><strong>₹{{ '%.0f'|format(b['total_amount'] if b['total_amount'] is defined else (b['fare'] * b['seats_booked'])) }}</strong></div></div>
+    </div>
+    <div class="seats">
+      {% if b['seat_numbers'] and b['seat_numbers']|length > 0 %}
+      <div class="kv"><div class="k">Seat Numbers</div><div>{{ b['seat_numbers']|join(', ') }}</div></div>
+      {% endif %}
+      {% if b['passengers'] and b['passengers']|length > 0 %}
+      <div style="margin-top:8px">
+        <div style="font-weight:700;margin-bottom:6px">Passengers</div>
+        <div style="display:grid;gap:6px">
+          {% for p in b['passengers'] %}
+          <div class="kv">
+            <div class="k">{{ loop.index }}.</div>
+            <div>
+              <div><strong>{{ p['name'] or '—' }}</strong>{% if p['seat_no'] %} • Seat {{ p['seat_no'] }}{% endif %}</div>
+              <div class="muted" style="font-size:12px">
+                {% if p['age'] %}Age: {{ p['age'] }}{% endif %}
+                {% if p['gender'] %}{% if p['age'] %} • {% endif %}Gender: {{ p['gender'] }}{% endif %}
+                {% if p['email'] %}{% if p['age'] or p['gender'] %} • {% endif %}Email: {{ p['email'] }}{% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+      
+    </div>
+    <div class="qr-wrap">
+      <div>
+        <div class="muted">Scan at boarding</div>
+        <div id="qrdata" class="muted" style="font-size:12px;word-break:break-all"></div>
+      </div>
+      <div class="qr-box"><div id="qrcode"></div></div>
+    </div>
+    <div class="actions">
+      <button class="btn-outline" onclick="window.location='{{ url_for('view_bookings') }}'">Back to Bookings</button>
+      <button class="btn" onclick="window.print()">Print Ticket</button>
+    </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-M6g9LxZXT2Bzq0h8mQd7Dq8j1tqH0k7v8gP5cHn5qfIP5KzHq7yq6xwJXlXyK7VfYlV9s6eF4aX0o1V0w8GMPA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script>
+    (function(){
+      var b = {{ b|tojson }};
+      var payload = {
+        id: b.id,
+        name: b.passenger_name,
+        phone: b.passenger_phone,
+        route: (b.from_city || '') + '→' + (b.to_city || ''),
+        depart: b.depart_time,
+        seats: Array.isArray(b.seat_numbers) ? b.seat_numbers : [],
+        paid: String(b.payment_status||'').toLowerCase() === 'paid',
+        ref: b.payment_ref || ''
+      };
+      var text = 'TW-TICKET|' + payload.id + '|' + payload.name + '|' + payload.route + '|' + payload.depart + '|seats:' + (payload.seats||[]).join(',') + '|paid:' + (payload.paid?'1':'0') + (payload.ref?('|ref:'+payload.ref):'');
+      var el = document.getElementById('qrcode');
+      var d = document.getElementById('qrdata');
+      if (d) d.textContent = text;
+      if (el && window.QRCode) new QRCode(el, { text: text, width: 128, height: 128, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+    })();
+  </script>
+</body>
+</html>

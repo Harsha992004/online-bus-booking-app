@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bookingla Nirvahnam (Admin)</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-inner container">
+      <div class="brand">🚌 TripWheels</div>
+      <ul class="nav-links">
+        <li><a href="{{ url_for('index') }}">🏠 Home</a></li>
+        <li><a href="{{ url_for('view_bookings') }}">🎫 Bookings</a></li>
+        <li><a href="{{ url_for('help_page') }}">❓ Help</a></li>
+        {% if session.get('role') == 'admin' %}
+        <li><a href="{{ url_for('admin_buses') }}">Admin</a></li>
+        <li><a href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
+        <li><a href="{{ url_for('admin_bookings') }}" class="active">Bookings Admin</a></li>
+        {% endif %}
+        {% if session.get('user_email') %}
+        <li><a href="{{ url_for('account_page') }}">👤 My Account</a></li>
+        <li><a href="{{ url_for('logout') }}">🚪 Logout</a></li>
+        {% else %}
+        <li><a href="{{ url_for('login') }}">Login</a></li>
+        <li><a href="{{ url_for('register') }}">Register</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </nav>
+
+  {% with msgs = get_flashed_messages(with_categories=True) %}
+    {% if msgs %}
+    <div class="container" style="max-width:900px">
+      {% for cat, msg in msgs %}
+      <div class="toast {{ 'error' if cat=='error' else 'show' }}" style="position:static">{{ msg }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+
+  <div class="container" style="max-width:1100px">
+    <h1>Bookingla Nirvahnam</h1>
+    <form method="get" class="auth-form" style="display:flex;gap:10px;flex-wrap:wrap;background:rgba(255,255,255,0.08);padding:12px;border-radius:10px">
+      <label>Vethaku (Search)
+        <input type="text" name="q" value="{{ q or '' }}" placeholder="Pere/Phone/Operator/City" />
+      </label>
+      <label>Status
+        <select name="status">
+          <option value="" {{ ''==status and 'selected' or '' }}>Any</option>
+          <option value="confirmed" {{ 'confirmed'==status and 'selected' or '' }}>Confirmed</option>
+          <option value="cancelled" {{ 'cancelled'==status and 'selected' or '' }}>Cancelled</option>
+        </select>
+      </label>
+      <label>Payment
+        <select name="payment">
+          <option value="" {{ ''==payment and 'selected' or '' }}>Any</option>
+          <option value="paid" {{ 'paid'==payment and 'selected' or '' }}>Paid</option>
+          <option value="unpaid" {{ 'unpaid'==payment and 'selected' or '' }}>Unpaid</option>
+          <option value="refunded" {{ 'refunded'==payment and 'selected' or '' }}>Refunded</option>
+        </select>
+      </label>
+      <label>Nundi (From)
+        <input type="datetime-local" name="from" value="{{ date_from or '' }}" />
+      </label>
+      <label>Varaku (To)
+        <input type="datetime-local" name="to" value="{{ date_to or '' }}" />
+      </label>
+      <button type="submit" class="btn-outline">Filter</button>
+    </form>
+
+    <div style="overflow:auto;margin-top:12px">
+      <table border="1" cellpadding="8">
+        <tr>
+          <th>ID</th>
+          <th>Passenger</th>
+          <th>Phone</th>
+          <th>Bus</th>
+          <th>Route</th>
+          <th>Seats</th>
+          <th>Booked At</th>
+          <th>Status</th>
+          <th>Payment</th>
+          <th>Ref</th>
+          <th>Charyalu (Actions)</th>
+        </tr>
+        {% for r in rows %}
+        <tr>
+          <td>{{ r['id'] }}</td>
+          <td>{{ r['passenger_name'] }}</td>
+          <td>{{ r['passenger_phone'] }}</td>
+          <td>{{ r['bus_name'] }}</td>
+          <td>{{ r['from_city'] }} → {{ r['to_city'] }}</td>
+          <td>{{ r['seats_booked'] }}</td>
+          <td>{{ r['booked_at'] }}</td>
+          <td>{{ r['status'] }}</td>
+          <td>{{ r['payment_status'] }}</td>
+          <td>{{ r['payment_ref'] }}</td>
+          <td>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button class="btn-outline" data-adm-status="{{ r['id'] }}" data-to="confirmed">Confirm</button>
+              <button class="btn-outline" data-adm-status="{{ r['id'] }}" data-to="cancelled">Cancel</button>
+              <button class="btn-outline" data-adm-pay="{{ r['id'] }}" data-to="paid">Mark Paid</button>
+              <button class="btn-outline" data-adm-pay="{{ r['id'] }}" data-to="unpaid">Mark Unpaid</button>
+              <button class="btn-outline" data-adm-pay="{{ r['id'] }}" data-to="refunded">Refund</button>
+              <a class="btn-outline" href="{{ url_for('view_ticket', booking_id=r['id']) }}">Ticket</a>
+              <button class="btn-outline" data-release="{{ r['id'] }}">Release Seats</button>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // Admin actions
+    document.querySelectorAll('button[data-adm-status]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-adm-status');
+        const to = btn.getAttribute('data-to');
+        btn.disabled = true;
+        try {
+          const res = await fetch(`/admin/bookings/${id}/status`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status: to}) });
+          const data = await res.json();
+          if (data.status === 'success') location.reload(); else alert('Status update fail');
+        } catch (e) { alert('Network error'); }
+        finally { btn.disabled = false; }
+      });
+    });
+    document.querySelectorAll('button[data-adm-pay]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-adm-pay');
+        const to = btn.getAttribute('data-to');
+        btn.disabled = true;
+        try {
+          const res = await fetch(`/admin/bookings/${id}/payment`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({payment_status: to}) });
+          const data = await res.json();
+          if (data.status === 'success') location.reload(); else alert('Payment update fail');
+        } catch (e) { alert('Network error'); }
+        finally { btn.disabled = false; }
+      });
+    });
+    document.querySelectorAll('button[data-release]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-release');
+        if (!confirm('Release seats for this booking?')) return;
+        btn.disabled = true;
+        try {
+          const res = await fetch(`/admin/bookings/${id}/release-seats`, { method: 'POST' });
+          const data = await res.json();
+          if (data.status === 'success') location.reload(); else alert('Release fail');
+        } catch (e) { alert('Network error'); }
+        finally { btn.disabled = false; }
+      });
+    });
+  </script>
+</body>
+</html>

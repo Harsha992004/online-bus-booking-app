@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Bookings</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    </head>
+<body>
+    <nav class="navbar">
+        <div class="nav-inner container">
+            <div class="brand">🚌 TripWheels</div>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('index') }}">🏠 Home</a></li>
+                <li><a href="{{ url_for('view_bookings') }}" class="active">🎫 Bookings</a></li>
+                <li><a href="{{ url_for('help_page') }}">❓ Help</a></li>
+                {% if session.get('role') == 'admin' %}
+                <li><a href="{{ url_for('admin_buses') }}">Admin</a></li>
+                {% endif %}
+                {% if session.get('user_email') %}
+                <li><a href="{{ url_for('account_page') }}">👤 My Account</a></li>
+                <li><a href="{{ url_for('logout') }}">🚪 Logout</a></li>
+                {% else %}
+                <li><a href="{{ url_for('login') }}">Login</a></li>
+                <li><a href="{{ url_for('register') }}">Register</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+    {% with msgs = get_flashed_messages(with_categories=True) %}
+      {% if msgs %}
+      <div class="container" style="max-width:720px">
+        {% for cat, msg in msgs %}
+        <div class="toast {{ 'error' if cat=='error' else 'show' }}" style="position:static">{{ msg }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    {% endwith %}
+    <h1 style="text-align:center;margin-top:20px">🎫 My Bookings</h1>
+
+    {% if bookings %}
+    <table border="1" cellpadding="8">
+        <tr>
+            <th>Passenger</th>
+            <th>Phone</th>
+            <th>Bus</th>
+            <th>Route</th>
+            <th>Seats</th>
+            <th>Departure</th>
+            <th>Status</th>
+            <th>Payment</th>
+            <th>Action</th>
+        </tr>
+        {% for b in bookings %}
+        <tr>
+            <td>{{ b['passenger_name'] }}</td>
+            <td>{{ b['passenger_phone'] }}</td>
+            <td>{{ b['bus_name'] }}</td>
+            <td>{{ b['from_city'] }} → {{ b['to_city'] }}</td>
+            <td>{{ b['seats_booked'] }}</td>
+            <td>{{ b['depart_time'] }}</td>
+            <td>
+                {% if b['status'] %}
+                  {{ b['status']|capitalize }}
+                {% else %}
+                  Confirmed
+                {% endif %}
+            </td>
+            <td>
+                {% if b['payment_status'] == 'paid' %}
+                  <span class="muted">Paid</span>
+                  {% if b['payment_ref'] %}<div class="muted">Ref: {{ b['payment_ref'] }}</div>{% endif %}
+                {% elif (b['status'] or 'confirmed') == 'confirmed' %}
+                  <button class="btn-outline" data-pay="{{ b['id'] }}">Pay</button>
+                {% else %}
+                  <span class="muted">—</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if (b['status'] or 'confirmed') == 'confirmed' %}
+                <button class="btn-outline" data-bid="{{ b['id'] }}">Cancel</button>
+                {% else %}
+                <span class="muted">—</span>
+                {% endif %}
+                <a class="btn-outline" href="{{ url_for('view_ticket', booking_id=b['id']) }}" style="margin-left:6px;display:inline-block">View Ticket</a>
+                {% if session.get('role') == 'admin' %}
+                  <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+                    <button class="btn-outline" data-adm-status="{{ b['id'] }}" data-to="confirmed">Confirm</button>
+                    <button class="btn-outline" data-adm-status="{{ b['id'] }}" data-to="cancelled">Cancel</button>
+                    <button class="btn-outline" data-adm-pay="{{ b['id'] }}" data-to="paid">Mark Paid</button>
+                    <button class="btn-outline" data-adm-pay="{{ b['id'] }}" data-to="refunded">Refund</button>
+                    <button class="btn-outline" data-release="{{ b['id'] }}">Release Seats</button>
+                  </div>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    <script>
+      document.querySelectorAll('button[data-bid]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-bid');
+          if (!confirm('Cancel this booking?')) return;
+          btn.disabled = true;
+          btn.textContent = 'Cancelling...';
+          try {
+            const res = await fetch(`/api/bookings/${id}/cancel`, { method: 'POST' });
+            const data = await res.json();
+            if (data && data.status === 'success') {
+              location.reload();
+            } else {
+              alert('Failed to cancel');
+            }
+          } catch (e) {
+            alert('Network error');
+          } finally {
+            btn.disabled = false;
+            btn.textContent = 'Cancel';
+          }
+        });
+      });
+
+      document.querySelectorAll('button[data-pay]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-pay');
+          btn.disabled = true;
+          btn.textContent = 'Processing...';
+          try {
+            const res = await fetch(`/api/bookings/${id}/pay`, { method: 'POST' });
+            const data = await res.json();
+            if (data && data.status === 'success') {
+              alert(`Payment successful! Ref: ${data.payment_ref}`);
+              location.reload();
+            } else {
+              alert('Payment failed');
+            }
+          } catch (e) {
+            alert('Network error');
+          } finally {
+            btn.disabled = false;
+            btn.textContent = 'Pay';
+          }
+        });
+      });
+
+      // Admin actions
+      document.querySelectorAll('button[data-adm-status]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-adm-status');
+          const to = btn.getAttribute('data-to');
+          btn.disabled = true;
+          try {
+            const res = await fetch(`/admin/bookings/${id}/status`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status: to}) });
+            const data = await res.json();
+            if (data.status === 'success') location.reload(); else alert('Status update fail');
+          } catch (e) { alert('Network error'); }
+          finally { btn.disabled = false; }
+        });
+      });
+      document.querySelectorAll('button[data-adm-pay]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-adm-pay');
+          const to = btn.getAttribute('data-to');
+          btn.disabled = true;
+          try {
+            const res = await fetch(`/admin/bookings/${id}/payment`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({payment_status: to}) });
+            const data = await res.json();
+            if (data.status === 'success') location.reload(); else alert('Payment update fail');
+          } catch (e) { alert('Network error'); }
+          finally { btn.disabled = false; }
+        });
+      });
+      document.querySelectorAll('button[data-release]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-release');
+          if (!confirm('Release seats for this booking?')) return;
+          btn.disabled = true;
+          try {
+            const res = await fetch(`/admin/bookings/${id}/release-seats`, { method: 'POST' });
+            const data = await res.json();
+            if (data.status === 'success') location.reload(); else alert('Release fail');
+          } catch (e) { alert('Network error'); }
+          finally { btn.disabled = false; }
+        });
+      });
+    </script>
+    {% else %}
+    <p>No bookings yet!</p>
+    {% endif %}
+</body>
+</html>

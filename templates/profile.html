@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Profile</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-inner container">
+      <div class="brand">🚌 TripWheels</div>
+      <ul class="nav-links">
+        <li><a href="{{ url_for('index') }}">🏠 Home</a></li>
+        <li><a href="{{ url_for('view_bookings') }}">🎫 Bookings</a></li>
+        <li><a href="{{ url_for('help_page') }}">❓ Help</a></li>
+        <li><a href="{{ url_for('account_page') }}" class="active">👤 My Account</a></li>
+        <li><a href="{{ url_for('logout') }}">🚪 Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+  {% with msgs = get_flashed_messages(with_categories=True) %}
+    {% if msgs %}
+    <div class="container" style="max-width:520px">
+      {% for cat, msg in msgs %}
+      <div class="toast {{ 'error' if cat=='error' else 'show' }}" style="position:static">{{ msg }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+  <div class="container" style="max-width:520px">
+    <h1>My Profile</h1>
+    <div class="card" style="background:rgba(255,255,255,0.08);padding:16px;border-radius:10px">
+      <p class="muted" style="margin-top:0">Email: <strong>{{ user.email }}</strong></p>
+      <p class="muted">Role: <strong>{{ user.role or 'customer' }}</strong></p>
+      <form method="post" class="auth-form">
+        <label>Name
+          <input type="text" name="name" value="{{ user.name or '' }}" />
+        </label>
+        <label>Phone
+          <input type="tel" name="phone" value="{{ user.phone or '' }}" inputmode="numeric" pattern="[0-9]{10}" title="10 digits" />
+        </label>
+        <button type="submit">Save</button>
+      </form>
+      <p class="muted" style="margin-top:10px"><a href="{{ url_for('change_password') }}">Change Password</a></p>
+    </div>
+  </div>
+</body>
+</html>

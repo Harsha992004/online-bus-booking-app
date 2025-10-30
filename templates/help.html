@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Help • TripWheels</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-inner container">
+      <div class="brand">🚌 TripWheels</div>
+      <ul class="nav-links">
+        <li><a href="{{ url_for('index') }}">🏠 Home</a></li>
+        <li><a href="{{ url_for('view_bookings') }}">🎫 Bookings</a></li>
+        <li><a class="active" href="{{ url_for('help_page') }}">❓ Help</a></li>
+        {% if session.get('user_email') %}
+        <li><a href="{{ url_for('account_page') }}">👤 My Account</a></li>
+        <li><a href="{{ url_for('logout') }}">🚪 Logout</a></li>
+        {% else %}
+        <li><a href="{{ url_for('login') }}">Login</a></li>
+        <li><a href="{{ url_for('register') }}">Register</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </nav>
+  {% with msgs = get_flashed_messages(with_categories=True) %}
+    {% if msgs %}
+    <div class="container" style="max-width:720px">
+      {% for cat, msg in msgs %}
+      <div class="toast {{ 'error' if cat=='error' else 'show' }}" style="position:static">{{ msg }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+
+  <div class="container" style="max-width:900px">
+    <h1>Help & Support</h1>
+
+    <section class="card" style="padding:16px;background:rgba(255,255,255,0.08);border-radius:12px;border:1px solid rgba(255,255,255,0.18)">
+      <h2 class="muted">How to book a ticket</h2>
+      <ol>
+        <li>Enter From, To, and Date, then click Search.</li>
+        <li>Select a bus from the results.</li>
+        <li>Fill passenger details and confirm booking.</li>
+        <li>Check your bookings under the Bookings page.</li>
+      </ol>
+    </section>
+
+    <section style="margin-top:16px" class="card">
+      <div style="padding:16px;background:rgba(255,255,255,0.08);border-radius:12px;border:1px solid rgba(255,255,255,0.18)">
+        <h2 class="muted">Frequently Asked Questions</h2>
+        <details>
+          <summary>Can I cancel or reschedule my ticket?</summary>
+          <p>Cancellation/reschedule will be added soon. For now, contact support with your booking ID.</p>
+        </details>
+        <details>
+          <summary>I didn’t receive confirmation</summary>
+          <p>Open the Bookings page to verify. If missing, try booking again or contact support.</p>
+        </details>
+        <details>
+          <summary>Payment options</summary>
+          <p>Online payments will be added in a future update. Currently bookings are recorded without payment.</p>
+        </details>
+      </div>
+    </section>
+
+    <section style="margin-top:16px" class="card">
+      <div style="padding:16px;background:rgba(255,255,255,0.08);border-radius:12px;border:1px solid rgba(255,255,255,0.18)">
+        <h2 class="muted">Contact Support</h2>
+        <p>Email: support@tripwheels.example</p>
+        <p>Phone: +91 90000 00000</p>
+        <p>Hours: 9:00 AM – 9:00 PM IST</p>
+        <a href="mailto:support@tripwheels.example"><button>Email Support</button></a>
+        <a href="tel:+919000000000" class="btn-outline" style="margin-left:8px"><button class="btn-outline">Call Us</button></a>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

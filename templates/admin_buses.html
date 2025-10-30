@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Busla Nirvahnam (Admin)</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-inner container">
+      <div class="brand">🚌 TripWheels</div>
+      <ul class="nav-links">
+        <li><a href="{{ url_for('index') }}">Home</a></li>
+        <li><a href="{{ url_for('view_bookings') }}">Bookings</a></li>
+        <li><a href="{{ url_for('help_page') }}">Help</a></li>
+        {% if session.get('role') == 'admin' %}
+        <li><a href="{{ url_for('admin_buses') }}" class="active">Admin</a></li>
+        {% endif %}
+        {% if session.get('user_email') %}
+        <li><a href="{{ url_for('account_page') }}">My Account</a></li>
+        <li><a href="{{ url_for('logout') }}">Logout</a></li>
+        {% else %}
+        <li><a href="{{ url_for('login') }}">Login</a></li>
+        <li><a href="{{ url_for('register') }}">Register</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </nav>
+  {% with msgs = get_flashed_messages(with_categories=True) %}
+    {% if msgs %}
+      <div class="container" style="max-width:720px">
+        {% for cat, msg in msgs %}
+          <div class="toast {{ 'error' if cat=='error' else 'show' }}" style="position:static">{{ msg }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+  <div class="container">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0">
+      <h1>Busla Nirvahnam</h1>
+      <a class="btn-outline" href="{{ url_for('admin_bus_new') }}">Kotha Bus</a>
+    </div>
+    {% if buses %}
+    <table border="1" cellpadding="8">
+      <tr>
+        <th>Pere</th>
+        <th>Nundi</th>
+        <th>Varaku</th>
+        <th>Departure</th>
+        <th>Arrival</th>
+        <th>Seats</th>
+        <th>Fare</th>
+        <th>Charyalu</th>
+      </tr>
+      {% for b in buses %}
+      <tr>
+        <td>{{ b['name'] }}</td>
+        <td>{{ b['from_city'] }}</td>
+        <td>{{ b['to_city'] }}</td>
+        <td>{{ b['depart_time'] }}</td>
+        <td>{{ b['arrive_time'] }}</td>
+        <td>{{ b['seats_total'] }}</td>
+        <td>{{ b['fare'] }}</td>
+        <td>
+          <a class="btn-outline" href="{{ url_for('admin_bus_edit', bus_id=b['id']) }}">Sudarinchandi</a>
+          <button class="btn-outline" data-del="{{ b['id'] }}">Tolaginchandi</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <p>Bus lekalu levu.</p>
+    {% endif %}
+  </div>
+  <script>
+    document.querySelectorAll('button[data-del]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-del');
+        if (!confirm('Kachchitanga delete cheyala?')) return;
+        btn.disabled = true; btn.textContent = 'Deleting...';
+        try {
+          const res = await fetch(`{{ url_for('admin_buses') }}/${id}/delete`.replace('/admin/buses', '/admin/buses'), { method: 'POST' });
+          const data = await res.json();
+          if (data.status === 'success') location.reload(); else alert('Delete fail ayindi');
+        } catch (e) { alert('Network error'); }
+        finally { btn.disabled = false; btn.textContent = 'Tolaginchandi'; }
+      });
+    });
+  </script>
+</body>
+</html>

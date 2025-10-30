@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-inner container">
+      <div class="brand">🚌 TripWheels</div>
+      <ul class="nav-links">
+        <li><a href="{{ url_for('index') }}">Inti (Home)</a></li>
+        <li><a href="{{ url_for('view_bookings') }}">Bookinglu</a></li>
+        <li><a href="{{ url_for('help_page') }}">Sahayam</a></li>
+        <li><a href="{{ url_for('admin_buses') }}">Admin</a></li>
+        <li><a href="{{ url_for('account_page') }}">Naa Khata</a></li>
+      </ul>
+    </div>
+  </nav>
+  {% with msgs = get_flashed_messages(with_categories=True) %}
+    {% if msgs %}
+    <div class="container" style="max-width:900px">
+      {% for cat, msg in msgs %}
+      <div class="toast {{ 'error' if cat=='error' else 'show' }}" style="position:static">{{ msg }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+  <div class="container" style="max-width:1000px">
+    <h1>Admin Dashboard</h1>
+    <form method="get" class="auth-form" style="display:flex;gap:10px;flex-wrap:wrap;background:rgba(255,255,255,0.08);padding:12px;border-radius:10px">
+      <label>Nundi Date
+        <input type="datetime-local" name="from" value="{{ date_from or '' }}" />
+      </label>
+      <label>Varaku Date
+        <input type="datetime-local" name="to" value="{{ date_to or '' }}" />
+      </label>
+      <button type="submit" class="btn-outline">Filter</button>
+      <a class="btn-outline" href="{{ url_for('export_buses_csv') }}">Export Buses CSV</a>
+      <a class="btn-outline" href="{{ url_for('export_bookings_csv') }}">Export Bookings CSV</a>
+    </form>
+
+    <div class="grid" style="margin-top:16px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+      <div class="card" style="padding:16px">
+        <div class="muted">Total Bookings</div>
+        <div style="font-size:28px;font-weight:700">{{ total_bookings }}</div>
+      </div>
+      <div class="card" style="padding:16px">
+        <div class="muted">Confirmed</div>
+        <div style="font-size:28px;font-weight:700;color:#33d17a">{{ confirmed }}</div>
+      </div>
+      <div class="card" style="padding:16px">
+        <div class="muted">Cancelled</div>
+        <div style="font-size:28px;font-weight:700;color:#e01b24">{{ cancelled }}</div>
+      </div>
+      <div class="card" style="padding:16px">
+        <div class="muted">Revenue (₹)</div>
+        <div style="font-size:28px;font-weight:700">{{ '%.2f' % revenue }}</div>
+      </div>
+    </div>
+
+    <h2 style="margin-top:20px">Recent Bookings</h2>
+    <div style="overflow:auto">
+      <table border="1" cellpadding="8">
+        <tr>
+          <th>ID</th>
+          <th>Passenger</th>
+          <th>Seats</th>
+          <th>Booked At</th>
+          <th>Status</th>
+          <th>Payment</th>
+          <th>Ref</th>
+        </tr>
+        {% for r in rows[:25] %}
+        <tr>
+          <td>{{ r['id'] if r is mapping else r['id'] }}</td>
+          <td>{{ r['passenger_name'] if r is mapping else r['passenger_name'] }}</td>
+          <td>{{ r['seats_booked'] if r is mapping else r['seats_booked'] }}</td>
+          <td>{{ r['booked_at'] if r is mapping else r['booked_at'] }}</td>
+          <td>{{ r['status'] if r is mapping else r['status'] }}</td>
+          <td>{{ r['payment_status'] if r is mapping else r['payment_status'] }}</td>
+          <td>{{ r['payment_ref'] if r is mapping else r['payment_ref'] }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+</body>
+</html>
